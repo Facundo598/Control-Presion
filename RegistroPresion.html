@@ -12,7 +12,6 @@
   --border: #e0e6ed;
   --text: #1f2937;
   --muted: #6b7280;
-  --accent: #2563eb;
 }
 
 body {
@@ -110,7 +109,7 @@ tbody tr:hover {
 
   <div class="card">
     <div class="table-wrapper">
-      <table id="tabla">
+      <table>
         <thead></thead>
         <tbody></tbody>
       </table>
@@ -120,72 +119,122 @@ tbody tr:hover {
 </div>
 
 <script>
-const url = "https://docs.google.com/spreadsheets/d/1rrzaQvKH93qu4w2cVfNvumUcpuMomBgWBh6jXkzvEVo/gviz/tq?tqx=out:csv&gid=238346017";
+
+/* =========================
+   CONFIGURACIÓN
+========================= */
+
+const url =
+"https://docs.google.com/spreadsheets/d/1rrzaQvKH93qu4w2cVfNvumUcpuMomBgWBh6jXkzvEVo/gviz/tq?tqx=out:csv&gid=238346017";
+
+/* 👇 NOMBRES QUE SE MOSTRARÁN (orden de columnas) */
+const customHeaders = [
+  "Fecha",
+  "Nombre",
+  "Sistólica",
+  "Diastólica",
+  "Pulso",
+  "Momento",
+];
+
+/* ========================= */
 
 let data = [];
 let sortState = {};
 
 fetch(url)
-  .then(r => r.text())
-  .then(csv => {
-    const rows = csv.trim().split("\n").map(r =>
-      r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-        .map(c => c.replace(/^"|"$/g, ""))
-    );
+.then(r => r.text())
+.then(csv => {
 
-    data = rows.slice(1);
-    renderTable(rows[0], data);
+  const rows = csv.trim().split("\n").map(r =>
+    r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+      .map(c => c.replace(/^"|"$/g, ""))
+  );
 
-    document.getElementById("estado").textContent = "Datos cargados ✅";
-  })
-  .catch(e => {
-    document.getElementById("estado").textContent = "Error al cargar datos ❌";
-    console.error(e);
-  });
+  const headers = rows[0];
+  data = rows.slice(1);
+
+  renderTable(headers, data);
+
+  document.getElementById("estado").textContent = "Datos cargados ✅";
+})
+.catch(e => {
+  document.getElementById("estado").textContent = "Error al cargar datos ❌";
+  console.error(e);
+});
+
 
 function renderTable(headers, rows) {
+
   const thead = document.querySelector("thead");
   const tbody = document.querySelector("tbody");
 
   thead.innerHTML = "";
   tbody.innerHTML = "";
 
-  const tr = document.createElement("tr");
+  /* ---------- HEADERS ---------- */
+
+  const trHead = document.createElement("tr");
+
   headers.forEach((h, i) => {
+
     const th = document.createElement("th");
-    th.innerHTML = `${h}<span>⇅</span>`;
+
+    const visibleName = customHeaders[i] || h;
+
+    th.innerHTML = `${visibleName}<span>⇅</span>`;
     th.onclick = () => sortBy(i, headers);
-    tr.appendChild(th);
+
+    trHead.appendChild(th);
   });
-  thead.appendChild(tr);
+
+  thead.appendChild(trHead);
+
+  /* ---------- FILAS ---------- */
 
   rows.forEach(r => {
+
     const tr = document.createElement("tr");
+
     r.forEach((c, i) => {
+
       const td = document.createElement("td");
 
-      if (i === 2) td.innerHTML = `<span class="badge sys">${c}</span>`;
-      else if (i === 3) td.innerHTML = `<span class="badge dia">${c}</span>`;
-      else if (i === 4) td.innerHTML = `<span class="badge pulse">${c}</span>`;
-      else td.textContent = c;
+      if (i === 2)
+        td.innerHTML = `<span class="badge sys">${c}</span>`;
+      else if (i === 3)
+        td.innerHTML = `<span class="badge dia">${c}</span>`;
+      else if (i === 4)
+        td.innerHTML = `<span class="badge pulse">${c}</span>`;
+      else
+        td.textContent = c;
 
       tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
   });
 }
 
+
+/* ---------- ORDENAR ---------- */
+
 function sortBy(index, headers) {
+
   const asc = sortState[index] = !sortState[index];
 
   data.sort((a, b) => {
+
     const x = isNaN(a[index]) ? a[index] : Number(a[index]);
     const y = isNaN(b[index]) ? b[index] : Number(b[index]);
-    return asc ? x > y ? 1 : -1 : x < y ? 1 : -1;
+
+    if (x === y) return 0;
+    return asc ? (x > y ? 1 : -1) : (x < y ? 1 : -1);
   });
 
   renderTable(headers, data);
 }
+
 </script>
 
 </body>
